@@ -31,6 +31,8 @@ import {ExplorationOpportunity} from '../opportunities-list-item/opportunities-l
 import {ContributionOpportunitiesService} from '../services/contribution-opportunities.service';
 import {OpportunitiesListComponent} from './opportunities-list.component';
 import {MatIconModule} from '@angular/material/icon';
+import {FormsModule} from '@angular/forms';
+import {By} from '@angular/platform-browser';
 
 describe('Opportunities List Component', () => {
   let component: OpportunitiesListComponent;
@@ -40,9 +42,40 @@ describe('Opportunities List Component', () => {
   let translationTopicService: TranslationTopicService;
   let contributionOpportunitiesService: ContributionOpportunitiesService;
 
+  const mockOpportunities: ExplorationOpportunity[] = [
+    {
+      id: '1',
+      heading: 'Math Skills',
+      subheading: 'Basic Mathematics',
+      progressPercentage: 50,
+      actionButtonTitle: 'Start',
+      isPinned: false,
+      topicName: 'Math',
+      labelText: 'Math',
+      labelColor: 'blue',
+      inReviewCount: 0,
+      totalCount: 10,
+      translationsCount: 5,
+    },
+    {
+      id: '2',
+      heading: 'Science Skills',
+      subheading: 'Basic Science',
+      progressPercentage: 30,
+      actionButtonTitle: 'Start',
+      isPinned: false,
+      topicName: 'Science',
+      labelText: 'Science',
+      labelColor: 'green',
+      inReviewCount: 0,
+      totalCount: 8,
+      translationsCount: 3,
+    },
+  ];
+
   beforeEach(() => {
     TestBed.configureTestingModule({
-      imports: [HttpClientTestingModule, MatIconModule],
+      imports: [HttpClientTestingModule, MatIconModule, FormsModule],
       declarations: [OpportunitiesListComponent],
       providers: [
         ContributionOpportunitiesService,
@@ -51,6 +84,27 @@ describe('Opportunities List Component', () => {
       ],
       schemas: [NO_ERRORS_SCHEMA],
     }).compileComponents();
+
+    fixture = TestBed.createComponent(OpportunitiesListComponent);
+    component = fixture.componentInstance;
+    translationLanguageService = TestBed.inject(TranslationLanguageService);
+    translationTopicService = TestBed.inject(TranslationTopicService);
+    contributionOpportunitiesService = TestBed.inject(
+      ContributionOpportunitiesService
+    );
+
+    // Set up mock opportunities.
+    component.opportunities = mockOpportunities;
+    component.visibleOpportunities = mockOpportunities;
+    component.showSearchBar = true;
+    component.opportunityHeadingTruncationLength = 50;
+    component.opportunityType = 'translation';
+    component.loadMoreOpportunities = () =>
+      Promise.resolve({
+        opportunitiesDicts: [],
+        more: false,
+      });
+    fixture.detectChanges();
   });
 
   beforeEach(() => {
@@ -999,5 +1053,369 @@ describe('Opportunities List Component', () => {
         expect(component.unpinOpportunity).toHaveBeenCalledWith(updatedData);
       }
     );
+  });
+
+  describe('Search Functionality', () => {
+    beforeEach(() => {
+      // Reset component state before each test.
+      component.opportunities = mockOpportunities;
+      component.visibleOpportunities = mockOpportunities;
+      component.showSearchBar = true;
+      component.searchQuery = '';
+      component.filteredOpportunities = [];
+      fixture.detectChanges();
+    });
+
+    it('should show search bar when showSearchBar is true', () => {
+      const searchBar = fixture.debugElement.query(By.css('.oppia-search-bar'));
+      expect(searchBar).toBeTruthy();
+    });
+
+    it('should hide search bar when showSearchBar is false', () => {
+      component.showSearchBar = false;
+      fixture.detectChanges();
+      const searchBar = fixture.debugElement.query(By.css('.oppia-search-bar'));
+      expect(searchBar).toBeFalsy();
+    });
+
+    it('should filter opportunities when typing in search bar', fakeAsync(() => {
+      const searchInput = fixture.debugElement.query(
+        By.css('input[type="text"]')
+      );
+      searchInput.nativeElement.value = 'Math';
+      searchInput.nativeElement.dispatchEvent(new Event('input'));
+      tick();
+      fixture.detectChanges();
+
+      expect(component.filteredOpportunities.length).toBe(1);
+      expect(component.filteredOpportunities[0].heading).toBe('Math Skills');
+    }));
+
+    it('should show dropdown with filtered results when typing', fakeAsync(() => {
+      const searchInput = fixture.debugElement.query(
+        By.css('input[type="text"]')
+      );
+      searchInput.nativeElement.value = 'Math';
+      searchInput.nativeElement.dispatchEvent(new Event('input'));
+      tick();
+      fixture.detectChanges();
+
+      const dropdown = fixture.debugElement.query(
+        By.css('.oppia-search-results')
+      );
+      expect(dropdown).toBeTruthy();
+      expect(dropdown.nativeElement.children.length).toBe(1);
+    }));
+
+    it('should clear dropdown when search is applied', fakeAsync(() => {
+      // First type to show dropdown.
+      const searchInput = fixture.debugElement.query(
+        By.css('input[type="text"]')
+      );
+      searchInput.nativeElement.value = 'Math';
+      searchInput.nativeElement.dispatchEvent(new Event('input'));
+      tick();
+      fixture.detectChanges();
+
+      // Then click search button.
+      const searchButton = fixture.debugElement.query(
+        By.css('.oppia-search-button')
+      );
+      searchButton.nativeElement.click();
+      tick();
+      fixture.detectChanges();
+
+      const dropdown = fixture.debugElement.query(
+        By.css('.oppia-search-results')
+      );
+      expect(dropdown).toBeFalsy();
+    }));
+
+    it('should filter opportunities when search button is clicked', fakeAsync(() => {
+      const searchInput = fixture.debugElement.query(
+        By.css('input[type="text"]')
+      );
+      searchInput.nativeElement.value = 'Math';
+      searchInput.nativeElement.dispatchEvent(new Event('input'));
+      tick();
+      fixture.detectChanges();
+
+      const searchButton = fixture.debugElement.query(
+        By.css('.oppia-search-button')
+      );
+      searchButton.nativeElement.click();
+      tick();
+      fixture.detectChanges();
+
+      expect(component.visibleOpportunities.length).toBe(1);
+      expect(component.visibleOpportunities[0].heading).toBe('Math Skills');
+    }));
+
+    it('should show all opportunities when empty search is applied', fakeAsync(() => {
+      // First filter the opportunities.
+      component.searchQuery = 'Math';
+      component.applySearch();
+      tick();
+      fixture.detectChanges();
+
+      // Then clear and search.
+      component.searchQuery = '';
+      component.applySearch();
+      tick();
+      fixture.detectChanges();
+
+      expect(component.visibleOpportunities.length).toBe(
+        mockOpportunities.length
+      );
+    }));
+
+    it('should select opportunity when clicked from dropdown', fakeAsync(() => {
+      // First type to show dropdown.
+      const searchInput = fixture.debugElement.query(
+        By.css('input[type="text"]')
+      );
+      searchInput.nativeElement.value = 'Math';
+      searchInput.nativeElement.dispatchEvent(new Event('input'));
+      tick();
+      fixture.detectChanges();
+
+      // Then click the first result.
+      const firstResult = fixture.debugElement.query(
+        By.css('.oppia-search-result-item')
+      );
+      firstResult.nativeElement.click();
+      tick();
+      fixture.detectChanges();
+
+      // Verify search query is set and dropdown is cleared.
+      expect(component.searchQuery).toBe('Math Skills');
+      expect(component.filteredOpportunities.length).toBe(0);
+
+      // Verify the main list is not filtered yet.
+      expect(component.visibleOpportunities.length).toBe(
+        mockOpportunities.length
+      );
+    }));
+
+    it('should handle search with Enter key', fakeAsync(() => {
+      const searchInput = fixture.debugElement.query(
+        By.css('input[type="text"]')
+      );
+      searchInput.nativeElement.value = 'Math';
+      searchInput.nativeElement.dispatchEvent(new Event('input'));
+      tick();
+      fixture.detectChanges();
+
+      // Simulate Enter key press.
+      searchInput.nativeElement.dispatchEvent(
+        new KeyboardEvent('keydown', {
+          key: 'Enter',
+          code: 'Enter',
+          keyCode: 13,
+          which: 13,
+          bubbles: true,
+        })
+      );
+      tick();
+      fixture.detectChanges();
+
+      expect(component.visibleOpportunities.length).toBe(1);
+      expect(component.visibleOpportunities[0].heading).toBe('Math Skills');
+      expect(component.filteredOpportunities.length).toBe(0);
+    }));
+
+    it('should show multiple results in dropdown when multiple opportunities match', fakeAsync(() => {
+      component.opportunities = [
+        {
+          id: '1',
+          heading: 'Math Skills',
+          subheading: '',
+          progressPercentage: 0,
+          actionButtonTitle: '',
+          isPinned: false,
+          topicName: '',
+          labelText: '',
+          labelColor: '',
+          inReviewCount: 0,
+          totalCount: 0,
+          translationsCount: 0,
+        },
+        {
+          id: '2',
+          heading: 'Math Advanced',
+          subheading: '',
+          progressPercentage: 0,
+          actionButtonTitle: '',
+          isPinned: false,
+          topicName: '',
+          labelText: '',
+          labelColor: '',
+          inReviewCount: 0,
+          totalCount: 0,
+          translationsCount: 0,
+        },
+        {
+          id: '3',
+          heading: 'Science',
+          subheading: '',
+          progressPercentage: 0,
+          actionButtonTitle: '',
+          isPinned: false,
+          topicName: '',
+          labelText: '',
+          labelColor: '',
+          inReviewCount: 0,
+          totalCount: 0,
+          translationsCount: 0,
+        },
+      ];
+      component.visibleOpportunities = component.opportunities;
+      fixture.detectChanges();
+      const searchInput = fixture.debugElement.query(
+        By.css('input[type="text"]')
+      );
+      searchInput.nativeElement.value = 'Math';
+      searchInput.nativeElement.dispatchEvent(new Event('input'));
+      tick();
+      fixture.detectChanges();
+      expect(component.filteredOpportunities.length).toBe(2);
+      const dropdown = fixture.debugElement.query(
+        By.css('.oppia-search-results')
+      );
+      expect(dropdown).toBeTruthy();
+      expect(dropdown.nativeElement.children.length).toBe(2);
+    }));
+
+    it('should set search query and close dropdown when clicking a result, but not filter to a single result unless query is unique', fakeAsync(() => {
+      component.opportunities = [
+        {
+          id: '1',
+          heading: 'Math Skills',
+          subheading: '',
+          progressPercentage: 0,
+          actionButtonTitle: '',
+          isPinned: false,
+          topicName: '',
+          labelText: '',
+          labelColor: '',
+          inReviewCount: 0,
+          totalCount: 0,
+          translationsCount: 0,
+        },
+        {
+          id: '2',
+          heading: 'Math Advanced',
+          subheading: '',
+          progressPercentage: 0,
+          actionButtonTitle: '',
+          isPinned: false,
+          topicName: '',
+          labelText: '',
+          labelColor: '',
+          inReviewCount: 0,
+          totalCount: 0,
+          translationsCount: 0,
+        },
+        {
+          id: '3',
+          heading: 'Science',
+          subheading: '',
+          progressPercentage: 0,
+          actionButtonTitle: '',
+          isPinned: false,
+          topicName: '',
+          labelText: '',
+          labelColor: '',
+          inReviewCount: 0,
+          totalCount: 0,
+          translationsCount: 0,
+        },
+      ];
+      component.visibleOpportunities = component.opportunities;
+      fixture.detectChanges();
+      const searchInput = fixture.debugElement.query(
+        By.css('input[type="text"]')
+      );
+      searchInput.nativeElement.value = 'Math';
+      searchInput.nativeElement.dispatchEvent(new Event('input'));
+      tick();
+      fixture.detectChanges();
+      const firstResult = fixture.debugElement.queryAll(
+        By.css('.oppia-search-result-item')
+      )[0];
+      firstResult.nativeElement.click();
+      tick();
+      fixture.detectChanges();
+      expect(component.searchQuery).toBe('Math Skills');
+      expect(component.filteredOpportunities.length).toBe(0);
+      // The visible opportunities should still be filtered by the new query.
+      component.applySearch();
+      tick();
+      fixture.detectChanges();
+      expect(component.visibleOpportunities.length).toBe(1);
+      expect(component.visibleOpportunities[0].heading).toBe('Math Skills');
+    }));
+
+    it('should show all matching opportunities in visibleOpportunities when search is applied for a common substring', fakeAsync(() => {
+      component.opportunities = [
+        {
+          id: '1',
+          heading: 'Math Skills',
+          subheading: '',
+          progressPercentage: 0,
+          actionButtonTitle: '',
+          isPinned: false,
+          topicName: '',
+          labelText: '',
+          labelColor: '',
+          inReviewCount: 0,
+          totalCount: 0,
+          translationsCount: 0,
+        },
+        {
+          id: '2',
+          heading: 'Math Advanced',
+          subheading: '',
+          progressPercentage: 0,
+          actionButtonTitle: '',
+          isPinned: false,
+          topicName: '',
+          labelText: '',
+          labelColor: '',
+          inReviewCount: 0,
+          totalCount: 0,
+          translationsCount: 0,
+        },
+        {
+          id: '3',
+          heading: 'Science',
+          subheading: '',
+          progressPercentage: 0,
+          actionButtonTitle: '',
+          isPinned: false,
+          topicName: '',
+          labelText: '',
+          labelColor: '',
+          inReviewCount: 0,
+          totalCount: 0,
+          translationsCount: 0,
+        },
+      ];
+      component.visibleOpportunities = component.opportunities;
+      fixture.detectChanges();
+      const searchInput = fixture.debugElement.query(
+        By.css('input[type="text"]')
+      );
+      searchInput.nativeElement.value = 'Math';
+      searchInput.nativeElement.dispatchEvent(new Event('input'));
+      tick();
+      fixture.detectChanges();
+      component.applySearch();
+      tick();
+      fixture.detectChanges();
+      expect(component.visibleOpportunities.length).toBe(2);
+      expect(component.visibleOpportunities[0].heading).toContain('Math');
+      expect(component.visibleOpportunities[1].heading).toContain('Math');
+    }));
   });
 });

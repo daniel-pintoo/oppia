@@ -50,6 +50,8 @@ export class OpportunitiesListComponent {
   @Input() showOpportunityButton: boolean = true;
   @Input() showPinUnpinButton: boolean = false;
 
+  @Input() showSearchBar: boolean = true;
+
   @Output() clickActionButton: EventEmitter<string> = new EventEmitter();
 
   @Output() clickPinButton: EventEmitter<{
@@ -71,6 +73,8 @@ export class OpportunitiesListComponent {
   more: boolean = false;
   userIsOnLastPage: boolean = true;
   languageCode: string = '';
+  searchQuery: string = '';
+  filteredOpportunities: ExplorationOpportunity[] = [];
 
   constructor(
     private zone: NgZone,
@@ -299,5 +303,46 @@ export class OpportunitiesListComponent {
   onChangeLanguage(languageCode: string): void {
     this.languageCode = languageCode;
     this.fetchAndLoadOpportunities();
+  }
+
+  filterOpportunities(): void {
+    if (!this.searchQuery) {
+      this.filteredOpportunities = [];
+      return;
+    }
+    const query = this.searchQuery.toLowerCase();
+    this.filteredOpportunities = this.opportunities.filter(
+      opportunity =>
+        opportunity?.heading?.toLowerCase()?.includes(query) ?? false
+    );
+  }
+
+  selectOpportunity(opportunity: ExplorationOpportunity): void {
+    if (!opportunity || !opportunity.heading) {
+      return;
+    }
+    this.searchQuery = opportunity.heading;
+    this.filteredOpportunities = [];
+  }
+
+  applySearch(): void {
+    if (!this.searchQuery) {
+      this.filteredOpportunities = [];
+      this.visibleOpportunities = this.opportunities.slice(
+        0,
+        this.OPPORTUNITIES_PAGE_SIZE
+      );
+      this.activePageNumber = 1;
+      return;
+    }
+    this.filteredOpportunities = [];
+    this.visibleOpportunities = this.opportunities.filter(opportunity => {
+      return (
+        opportunity?.heading
+          ?.toLowerCase()
+          ?.includes(this.searchQuery.toLowerCase()) ?? false
+      );
+    });
+    this.activePageNumber = 1;
   }
 }
