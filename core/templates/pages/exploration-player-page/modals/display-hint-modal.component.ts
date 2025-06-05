@@ -93,13 +93,6 @@ export class DisplayHintModalComponent implements OnDestroy {
         this.isPlaying = false;
       })
     );
-
-    // Subscribe to audio end event.
-    this.directiveSubscriptions.add(
-      this.audioPlayerService.onAudioEnd.subscribe(() => {
-        this.isPlaying = false;
-      })
-    );
   }
 
   ngOnDestroy(): void {
