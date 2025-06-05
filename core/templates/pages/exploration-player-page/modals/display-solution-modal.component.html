@@ -2,7 +2,7 @@
   <span [innerHTML]="'I18N_SOLUTION_TITLE' | translate"></span>
 </div>
 <div class="voiceover-button-container">
-  <button *ngIf="hasVoiceover && isAudioBarExpanded()" 
+  <button *ngIf="hasVoiceover && isAudioBarExpanded()"
           class="oppia-learner-hint-solution-voiceover-button"
           (click)="playVoiceover()">
     <i class="fas" [ngClass]="{'fa-play-circle': !isPlaying, 'fa-stop-circle': isPlaying}"></i>
@@ -47,18 +47,19 @@
   .oppia-learner-hint-solution-voiceover-button {
     background: none;
     border: none;
+    box-shadow: none;
     color: #00786d;
     cursor: pointer;
     float: right;
     font-size: 1.8em;
-    margin-right: 0px;
-    padding: 5px;
+    margin-right: 0;
     outline: none;
+    padding: 5px;
   }
 
   .oppia-learner-hint-solution-voiceover-button:focus {
-    outline: none;
     box-shadow: none;
+    outline: none;
   }
 
   .oppia-learner-hint-and-solution-modal-body {
@@ -107,8 +108,8 @@
 
   .voiceover-button-container {
     position: absolute;
-    top: 20px;
     right: 20px;
+    top: 20px;
   }
 
   .fa-play-circle:before,

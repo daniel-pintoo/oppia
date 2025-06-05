@@ -38,7 +38,7 @@ import {Subscription} from 'rxjs';
 export class DisplayHintModalComponent implements OnDestroy {
   // These properties are initialized using Angular lifecycle hooks
   // and we need to do non-null assertion. For more information, see
-  // https://github.com/oppia/oppia/wiki/Guide-on-defining-types#ts-7-1
+  // https://github.com/oppia/oppia/wiki/Guide-on-defining-types#ts-7-1.
   index!: number;
   COMPONENT_NAME_HINT!: string;
   hint!: SubtitledHtml;
@@ -77,7 +77,7 @@ export class DisplayHintModalComponent implements OnDestroy {
     }
     this.hintContentId = contentId;
 
-    // Check if voiceover exists for this hint
+    // Check if voiceover exists for this hint.
     this.voiceoverPlayerService.setActiveVoiceover(this.hintContentId);
     this.voiceoverPlayerService.setActiveComponentName(
       AppConstants.COMPONENT_NAME_HINT
@@ -87,14 +87,14 @@ export class DisplayHintModalComponent implements OnDestroy {
 
     this.audioPlayerService.onAutoplayAudio.emit();
 
-    // Subscribe to audio player events
+    // Subscribe to audio player events.
     this.directiveSubscriptions.add(
       this.audioPlayerService.onAudioStop.subscribe(() => {
         this.isPlaying = false;
       })
     );
 
-    // Subscribe to audio end event
+    // Subscribe to audio end event.
     this.directiveSubscriptions.add(
       this.audioPlayerService.onAudioEnd.subscribe(() => {
         this.isPlaying = false;
@@ -112,22 +112,22 @@ export class DisplayHintModalComponent implements OnDestroy {
 
   playVoiceover(): void {
     if (this.isPlaying) {
-      // Stop and clear the audio
+      // Stop and clear the audio.
       this.audioPlayerService.stop();
       this.audioPlayerService.clear();
       this.isPlaying = false;
     } else {
       if (this.hasVoiceover) {
-        // Always load and play from the beginning
+        // Always load and play from the beginning.
         const voiceover = this.voiceoverPlayerService.getActiveVoiceover();
         if (voiceover) {
-          // First stop and clear any existing audio
+          // First stop and clear any existing audio.
           this.audioPlayerService.stop();
           this.audioPlayerService.clear();
 
-          // Then load and play the audio
+          // Then load and play the audio.
           this.audioPlayerService.loadAsync(voiceover.filename).then(() => {
-            // Set the current time to 0 before playing
+            // Set the current time to 0 before playing.
             this.audioPlayerService.setCurrentTime(0);
             this.audioPlayerService.play();
             this.isPlaying = true;
